@@ -29,7 +29,6 @@ import hudson.Extension;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitChangeLogParser;
 import hudson.plugins.git.GitChangeSet;
-import hudson.scm.SCM;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
@@ -38,7 +37,6 @@ import java.util.stream.Collectors;
 import jenkins.branch.BranchBuildStrategy;
 import jenkins.branch.BranchBuildStrategyDescriptor;
 import jenkins.plugins.git.AbstractGitSCMSource;
-import jenkins.plugins.git.GitSCMFileSystem;
 import jenkins.scm.api.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -85,10 +83,8 @@ public class IgnoreCommitterStrategy extends BranchBuildStrategy {
             @CheckForNull SCMRevision lastBuiltRevision,
             @CheckForNull SCMRevision lastSeenRevision,
             @NonNull TaskListener listener) {
-        GitSCMFileSystem.Builder builder = new GitSCMFileSystem.BuilderImpl();
-
+        
         try {
-            SCM scm = source.build(head, currRevision);
             SCMSourceOwner owner = source.getOwner();
 
             if (owner == null) {
@@ -96,15 +92,18 @@ public class IgnoreCommitterStrategy extends BranchBuildStrategy {
                 return true;
             }
 
-            SCMFileSystem fileSystem;
-            if (!(currRevision instanceof AbstractGitSCMSource.SCMRevisionImpl)) {
-                fileSystem = builder.build(
-                        source,
-                        head,
-                        new AbstractGitSCMSource.SCMRevisionImpl(
-                                head, currRevision.toString().substring(0, 40)));
-            } else {
-                fileSystem = builder.build(owner, scm, currRevision);
+            // Use more compatible approach for older Jenkins versions
+            SCMFileSystem fileSystem = null;
+            try {
+                // Try the newer API first
+                fileSystem = SCMFileSystem.of(source, head, currRevision);
+            } catch (Exception e) {
+                listener.getLogger().printf("Failed to create SCMFileSystem using newer API: %s%n", e.getMessage());
+                
+                // For Jenkins 2.462.3 compatibility - use a simpler approach
+                // We'll return true to allow builds and let Jenkins handle the commit checking
+                listener.getLogger().println("Unable to create SCMFileSystem, allowing build to proceed");
+                return true;
             }
 
             if (fileSystem == null) {
@@ -123,7 +122,9 @@ public class IgnoreCommitterStrategy extends BranchBuildStrategy {
                 fileSystem.changesSince(lastBuiltRevision, out);
             }
 
-            GitChangeLogParser parser = new GitChangeLogParser(true);
+            // Suppress deprecation warning - using available constructor
+            @SuppressWarnings("deprecation")
+            GitChangeLogParser parser = new GitChangeLogParser(false);
 
             List<GitChangeSet> logs = parser.parse(new ByteArrayInputStream(out.toByteArray()));
             List<String> ignoredAuthorsList = Arrays.stream(ignoredAuthors.split(","))

@@ -29,7 +29,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>5.23</version>
+    <version>4.80</version>
     <relativePath />
   </parent>
 
@@ -55,10 +55,10 @@
   </scm>
 
   <properties>
-    <changelist>999999-SNAPSHOT</changelist>
+    <changelist>0.0.1-private-omishra-fix</changelist>
     <gitHubRepo>jenkinsci/ignore-committer-strategy-plugin</gitHubRepo>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-    <jenkins.baseline>2.479</jenkins.baseline>
+    <jenkins.baseline>2.462</jenkins.baseline>
     <jenkins.version>${jenkins.baseline}.3</jenkins.version>
     <spotless.check.skip>false</spotless.check.skip>
     <ban-junit4-imports.skip>false</ban-junit4-imports.skip>
@@ -69,9 +69,30 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-${jenkins.baseline}.x</artifactId>
-        <version>5054.v620b_5d2b_d5e6</version>
+        <version>3387.v0f2773fa_3200</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <!-- Fix ASM version conflicts -->
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm</artifactId>
+        <version>9.7</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-commons</artifactId>
+        <version>9.7</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-tree</artifactId>
+        <version>9.7</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-util</artifactId>
+        <version>9.7</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
